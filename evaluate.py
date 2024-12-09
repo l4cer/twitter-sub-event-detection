@@ -91,7 +91,12 @@ def evaluate_model() -> None:
             [t, 1.0 if np.mean(y_eval[T_eval == t]) > THRESHOLD else 0.0])
 
     df = pd.DataFrame(predictions, columns=["ID", "EventType"])
-    df.to_csv("predictions.csv", index=False)
+
+    df["MatchID"] = df["ID"].apply(lambda x: int(x.split("_")[0]))
+    df["PeriodID"] = df["ID"].apply(lambda x: int(x.split("_")[1]))
+    df.sort_values(by=["MatchID", "PeriodID"], inplace=True)
+
+    df.to_csv("predictions.csv", columns=["ID", "EventType"], index=False)
 
 
 if __name__ == "__main__":
