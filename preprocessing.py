@@ -2,12 +2,13 @@ import os
 
 import logging
 
+import numpy as np
 import pandas as pd
 
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
 
-from typing import Union
+from typing import Tuple, Union
 
 
 BLUE = "\33[34m"
@@ -72,43 +73,42 @@ def preprocess_folder(folder: str, save_csv: bool = False) -> pd.DataFrame:
     return merged_df
 
 
-def tokenization_and_pad(df_train: pd.DataFrame, df_eval: pd.DataFrame) -> None:
+def tokenization_and_pad(df_train: pd.DataFrame, df_eval: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray]:
     tokenizer = Tokenizer()
 
     logging.info(f"Fit tokenizer in {GRAY}train dataset")
     tokenizer.fit_on_texts(df_train["Tweet"].values)
 
     logging.info(f"Tokenization and pad of {GRAY}train dataset")
-    df_train["Tokens"] = pad_sequences(
+    X_train = pad_sequences(
         tokenizer.texts_to_sequences(df_train["Tweet"].values),
         maxlen=50,
         padding="post"
-    ).tolist()
+    )
 
     logging.info(f"Tokenization and pad of {GRAY}eval dataset")
-    df_eval["Tokens"] = pad_sequences(
+    X_eval = pad_sequences(
         tokenizer.texts_to_sequences(df_eval["Tweet"].values),
         maxlen=50,
         padding="post"
-    ).tolist()
+    )
 
-    return
+    return X_train, X_eval
 
 
-if __name__ == "__main__":
+def main() -> None:
     df_train = preprocess_folder("train_tweets")
     df_eval = preprocess_folder("eval_tweets")
 
-    tokenization_and_pad(df_train, df_eval)
+    X_train, X_eval = tokenization_and_pad(df_train, df_eval)
+    y_train = df_train["EventType"]
 
-    df_train.to_csv(
-        "train_tweets.csv",
-        columns=["ID", "Timestamp", "Tokens", "EventType"],
-        index=False
-    )
+    np.save("data/X_train.npy", X_train.astype(np.int32))
+    np.save("data/y_train.npy", y_train.astype(np.float32))
 
-    df_eval.to_csv(
-        "eval_tweets.csv",
-        columns=["ID", "Timestamp", "Tokens"],
-        index=False
-    )
+    np.save("data/X_eval.npy", X_eval.astype(np.int32))
+    np.save("data/T_eval.npy", df_eval["ID"].to_numpy().astype(str))
+
+
+if __name__ == "__main__":
+    main()
