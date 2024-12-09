@@ -6,7 +6,7 @@ import pandas as pd
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 
-from models import Model, DummyModel, LogisticRegression
+from models import Model, DummyModel, LogisticRegression, RandomForest
 
 
 def evaluate(model: Model) -> None:
@@ -45,5 +45,5 @@ def evaluate(model: Model) -> None:
 
 
 if __name__ == "__main__":
-    model = LogisticRegression()
+    model = RandomForest()
     evaluate(model)
