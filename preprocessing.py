@@ -1,29 +1,32 @@
 import os
 
-import logging
+import console
 
 import numpy as np
 import pandas as pd
 
-from keras.preprocessing.text import Tokenizer
-from keras.preprocessing.sequence import pad_sequences
+import nltk
+import gensim.downloader as api
 
-from typing import Tuple, Union
-
-
-BLUE = "\33[34m"
-GRAY = "\33[90m"
-NORMAL = "\33[0m"
+from typing import Union
 
 
-logging.basicConfig(level=logging.INFO,
-    format=f"{BLUE}%(asctime)s{NORMAL} %(message)s{NORMAL}", datefmt="%H:%M:%S")
+console.log("Downloading stop words in multiple languages")
+nltk.download("stopwords", quiet=True)
+
+stopwords = set()
+for language in ["english", "french", "spanish", "portuguese"]:
+    stopwords.update(set(nltk.corpus.stopwords.words(language)))
+
+console.log("Loading 200-dimensional GloVe embedding model")
+embedding = api.load("glove-twitter-200")
+
+console.skip_lines(num=1)
 
 
 def preprocessing(data: Union[str, pd.DataFrame]) -> pd.DataFrame:
     if isinstance(data, str):
         df = pd.read_csv(data)
-        # df = df[:45]
 
     if isinstance(data, pd.DataFrame):
         df = data
@@ -33,9 +36,6 @@ def preprocessing(data: Union[str, pd.DataFrame]) -> pd.DataFrame:
 
     # Remove mentions
     df = df[df["Tweet"].str.findall(r"@[\w]+").map(len) == 0]
-
-    # Remove duplicated tweets
-    df.drop_duplicates(inplace=True)
 
     # Remove URLs
     df["Tweet"] = df["Tweet"].str.replace(r"http\S+", "", regex=True)
@@ -52,63 +52,43 @@ def preprocessing(data: Union[str, pd.DataFrame]) -> pd.DataFrame:
     # Lowercase all remaining tweets
     df["Tweet"] = df["Tweet"].str.lower().astype(str)
 
+    # Remove duplicated tweets
+    df.drop_duplicates(inplace=True)
+
+    # Tokenize and remove stop words
+    df["Tokens"] = df["Tweet"].apply(
+        lambda text: [word for word in text.split() if word not in stopwords and word in embedding])
+
+    df = df[df["Tokens"].map(len) > 0]
+
+    # Embedding tokens
+    df["Embedding"] = df["Tokens"].apply(
+        lambda tokens: np.mean([embedding[token] for token in tokens], axis=0))
+
+    df = df.drop(
+        columns=["MatchID", "PeriodID", "Timestamp", "Tweet", "Tokens"])
+
+    # Average of embeddings with the same ID
+    df = df.groupby(["ID"]).mean().reset_index()
+
     return df
 
 
-def preprocess_folder(folder: str, save_csv: bool = False) -> pd.DataFrame:
+def preprocess_folder(folder: str, save_destination: str) -> None:
     merged_df = None
 
-    for filename in os.listdir(folder):
-        logging.info(f"Preprocessing {GRAY}{folder}/{filename}")
+    total = len(os.listdir(folder))
+    for index, filename in enumerate(os.listdir(folder)):
+        console.log(f"{index+1}/{total} Preprocessing {{ITALIC}}{{GRAY}}{folder}/{filename}")
         df = preprocessing(os.path.join(folder, filename))
 
         merged_df = df if merged_df is None else pd.concat([merged_df, df])
 
-    if save_csv:
-        logging.info(f"Saving as {GRAY}{folder}.csv")
-        merged_df.to_csv(f"{folder}.csv", index=False)
-
-    print()
-
-    return merged_df
-
-
-def tokenization_and_pad(df_train: pd.DataFrame, df_eval: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray]:
-    tokenizer = Tokenizer()
-
-    logging.info(f"Fit tokenizer in {GRAY}train dataset")
-    tokenizer.fit_on_texts(df_train["Tweet"].values)
-
-    logging.info(f"Tokenization and pad of {GRAY}train dataset")
-    X_train = pad_sequences(
-        tokenizer.texts_to_sequences(df_train["Tweet"].values),
-        maxlen=50,
-        padding="post"
-    )
-
-    logging.info(f"Tokenization and pad of {GRAY}eval dataset")
-    X_eval = pad_sequences(
-        tokenizer.texts_to_sequences(df_eval["Tweet"].values),
-        maxlen=50,
-        padding="post"
-    )
-
-    return X_train, X_eval
-
-
-def main() -> None:
-    df_train = preprocess_folder("train_tweets")
-    df_eval = preprocess_folder("eval_tweets")
-
-    X_train, X_eval = tokenization_and_pad(df_train, df_eval)
-    y_train = df_train["EventType"]
-
-    np.save("data/X_train.npy", X_train.astype(np.int32))
-    np.save("data/y_train.npy", y_train.astype(np.float32))
-
-    np.save("data/X_eval.npy", X_eval.astype(np.int32))
-    np.save("data/T_eval.npy", df_eval["ID"].to_numpy().astype(str))
+    console.log(f"Saving the dataframe in {{ITALIC}}{{GRAY}}{save_destination}")
+    merged_df.to_pickle(save_destination)
 
 
 if __name__ == "__main__":
-    main()
+    preprocess_folder("train_tweets", "data/train.pkl")
+    console.skip_lines(num=1)
+    preprocess_folder("eval_tweets", "data/eval.pkl")
