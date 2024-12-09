@@ -164,6 +164,7 @@ cython_debug/
 # Datasets
 *.csv
 *.npy
+*.pkl
 
 # Keras checkpoints
 *.model.keras
