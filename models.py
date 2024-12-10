@@ -2,6 +2,8 @@ import numpy as np
 
 from sklearn import linear_model, ensemble
 
+from xgboost import XGBClassifier
+
 from keras import Sequential, layers
 
 from typing import Union
@@ -55,5 +57,46 @@ class RandomForest(Model):
 
     def predict(self, X: np.ndarray) -> Union[float, np.ndarray]:
         pred = self.model.predict(X)
+
+        return pred if len(pred) > 1 else pred.flatten()[0]
+
+
+class XGBoost(Model):
+    def __init__(self) -> None:
+        super().__init__("XGBoost")
+
+        self.model = XGBClassifier()
+
+    def train(self, X: np.ndarray, y: np.ndarray) -> None:
+        self.model.fit(X, y)
+
+    def predict(self, X: np.ndarray) -> Union[float, np.ndarray]:
+        pred = self.model.predict(X)
+
+        return pred if len(pred) > 1 else pred.flatten()[0]
+
+
+class Dense(Model):
+    def __init__(self) -> None:
+        super().__init__("Dense")
+
+        self.model = Sequential([
+            layers.Input(shape=(200,)),
+            layers.Dense(50, activation="relu"),
+            layers.Dense(50, activation="relu"),
+            layers.Dense( 1, activation="softmax")
+        ])
+
+        self.model.compile(
+            loss="binary_crossentropy",
+            metrics=["accuracy"],
+            optimizer="adam"
+        )
+
+    def train(self, X: np.ndarray, y: np.ndarray) -> None:
+        self.model.fit(X, y, epochs=10, batch_size=1)
+
+    def predict(self, X: np.ndarray) -> Union[float, np.ndarray]:
+        pred = self.model.predict(X, verbose=0)
 
         return pred if len(pred) > 1 else pred.flatten()[0]
