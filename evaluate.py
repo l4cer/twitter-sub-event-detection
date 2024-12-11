@@ -1,3 +1,5 @@
+import os
+
 import console
 
 import numpy as np
@@ -38,6 +40,9 @@ def evaluate(model: Model) -> None:
     df["PeriodID"] = df["ID"].apply(lambda x: int(x.split("_")[1]))
     df.sort_values(by=["MatchID", "PeriodID"], inplace=True)
 
+    if not os.path.exists("predictions"):
+        os.mkdir("predictions")
+
     filename = f"predictions/{model.name.lower()}.csv"
     df.to_csv(filename, columns=["ID", "EventType"], index=False)
 
@@ -45,5 +50,5 @@ def evaluate(model: Model) -> None:
 
 
 if __name__ == "__main__":
-    model = RandomForest()
+    model = FrequencyClassifier()
     evaluate(model)

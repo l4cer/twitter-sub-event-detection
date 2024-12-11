@@ -34,7 +34,7 @@ Download the dataset from the following [link](https://www.kaggle.com/competitio
 
 ## Execution
 
-Create two initially empty folders inside the project folder:
+The code will create two folders inside the project folder:
 
 ```
 📁 twitter-sub-event-detection

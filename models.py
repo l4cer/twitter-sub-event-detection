@@ -20,15 +20,18 @@ class Model:
         raise NotImplementedError
 
 
-class DummyModel(Model):
+class FrequencyClassifier(Model):
     def __init__(self) -> None:
-        super().__init__("DummyModel")
+        super().__init__("FrequencyClassifier")
 
     def train(self, X: np.ndarray, y: np.ndarray) -> None:
-        return
+        values, counts = np.unique(y, return_counts=True)
+        self.value = values[np.argmax(counts)]
 
     def predict(self, X: np.ndarray) -> Union[float, np.ndarray]:
-        return np.ones(len(X)) if len(X) > 1 else 1.0
+        pred = self.value * np.ones(len(X))
+
+        return pred if len(pred) > 1 else pred.flatten()[0]
 
 
 class LogisticRegression(Model):

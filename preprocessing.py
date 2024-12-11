@@ -11,12 +11,9 @@ import gensim.downloader as api
 from typing import Union
 
 
-console.log("Downloading stop words in multiple languages")
+console.log("Downloading stop words in english")
 nltk.download("stopwords", quiet=True)
-
-stopwords = set()
-for language in ["english", "french", "spanish", "portuguese"]:
-    stopwords.update(set(nltk.corpus.stopwords.words(language)))
+stopwords = set(nltk.corpus.stopwords.words("english"))
 
 console.log("Loading 200-dimensional GloVe embedding model")
 embedding = api.load("glove-twitter-200")
@@ -61,7 +58,7 @@ def preprocessing(data: Union[str, pd.DataFrame]) -> pd.DataFrame:
 
     df = df[df["Tokens"].map(len) > 0]
 
-    # Embedding tokens
+    # Feature extraction by embedding tokens
     df["Embedding"] = df["Tokens"].apply(
         lambda tokens: np.mean([embedding[token] for token in tokens], axis=0))
 
@@ -89,6 +86,9 @@ def preprocess_folder(folder: str, save_destination: str) -> None:
 
 
 if __name__ == "__main__":
+    if not os.path.exists("data"):
+        os.mkdir("data")
+
     preprocess_folder("train_tweets", "data/train.pkl")
     console.skip_lines(num=1)
     preprocess_folder("eval_tweets", "data/eval.pkl")
