@@ -66,15 +66,15 @@ class NearestNeighbour(Model):
         self.model = neighbors.KNeighborsClassifier(n_neighbors=5)
 
 
-class Dense(Model):
+class NeuralNetwork(Model):
     def __init__(self) -> None:
-        super().__init__("Dense")
+        super().__init__("NeuralNetwork")
 
         self.model = Sequential([
             layers.Input(shape=(200,)),
             layers.Dense(50, activation="relu"),
             layers.Dense(50, activation="relu"),
-            layers.Dense( 1, activation="softmax")
+            layers.Dense(1, activation="sigmoid")
         ])
 
         self.model.compile(
@@ -84,9 +84,9 @@ class Dense(Model):
         )
 
     def train(self, X: np.ndarray, y: np.ndarray) -> None:
-        self.model.fit(X, y, epochs=10, batch_size=1)
+        self.model.fit(X, y, epochs=50, batch_size=32)
 
     def predict(self, X: np.ndarray) -> Union[float, np.ndarray]:
-        pred = self.model.predict(X, verbose=0)
+        pred = np.round(self.model.predict(X, verbose=0))
 
         return pred if len(pred) > 1 else pred.flatten()[0]
