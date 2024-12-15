@@ -2,7 +2,7 @@
 
 The goal of this project is to study and apply machine learning/artificial intelligence techniques to predict the presence of specific sub-events in tweets posted during football games from the 2010 and 2014 World Cups.
 
-## Setup
+## Install
 
 To clone the project and install the dependencies, run the following commands:
 
@@ -32,7 +32,7 @@ Download the dataset from the following [link](https://www.kaggle.com/competitio
    📄 requirements.txt
 ```
 
-## Execution
+## Execute
 
 The code will create two folders inside the project folder:
 
